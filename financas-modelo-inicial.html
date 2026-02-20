@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fluxo - Dashboard Light</title>
+<style>
+    :root {
+        --bg: #f4f6f8;       /* Fundo cinza bem claro */
+        --col-bg: #e3e5e8;   /* Fundo da coluna */
+        --card-bg: #ffffff;  /* Fundo do cartão */
+        --text: #2c3e50;     /* Texto escuro azulado */
+        --text-sub: #7f8c8d; /* Texto secundário */
+        --accent: #3498db;   /* Azul destaque */
+        --green: #27ae60;    /* Verde positivo */
+        --red: #c0392b;      /* Vermelho negativo/dívida */
+        --shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    /* --- TOPO --- */
+    #top-bar {
+        background: #fff;
+        padding: 15px 20px;
+        border-bottom: 1px solid #ddd;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        z-index: 10;
+    }
+
+    h1 { margin: 0; font-size: 1.2rem; color: var(--text); }
+    
+    .input-wrapper {
+        display: flex;
+        background: #f0f2f5;
+        border-radius: 8px;
+        padding: 5px;
+        width: 50%;
+    }
+    
+    #cmd-input {
+        background: transparent;
+        border: none;
+        outline: none;
+        flex: 1;
+        padding: 8px;
+        font-size: 0.95rem;
+        color: var(--text);
+    }
+
+    /* --- GRID HORIZONTAL --- */
+    #board {
+        flex: 1;
+        display: flex;
+        overflow-x: auto;
+        padding: 20px;
+        gap: 20px;
+        align-items: flex-start; /* Alinha colunas no topo */
+    }
+
+    /* COLUNA DO MÊS */
+    .month-col {
+        min-width: 320px;
+        max-width: 320px;
+        background: var(--col-bg);
+        border-radius: 12px;
+        display: flex;
+        flex-direction: column;
+        max-height: 90vh; /* Permite scroll interno se o mês for longo */
+        border: 1px solid #dcdcdc;
+    }
+
+    .month-header {
+        padding: 15px;
+        background: #fff;
+        border-radius: 12px 12px 0 0;
+        border-bottom: 1px solid #eee;
+        font-weight: 700;
+        display: flex;
+        justify-content: space-between;
+        color: var(--text);
+    }
+
+    .month-body {
+        padding: 10px;
+        overflow-y: auto;
+    }
+
+    /* SEPARADORES DE CATEGORIA */
+    .section-title {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        color: var(--text-sub);
+        font-weight: 700;
+        margin: 15px 0 5px 5px;
+        letter-spacing: 0.5px;
+    }
+
+    /* --- TIPOS DE CARTÕES --- */
+
+    /* 1. CARD SIMPLES (Conta Fixa) */
+    .card {
+        background: var(--card-bg);
+        padding: 12px;
+        margin-bottom: 8px;
+        border-radius: 8px;
+        box-shadow: var(--shadow);
+        border-left: 4px solid transparent;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .card.bill { border-left-color: var(--red); } /* Conta a pagar */
+    .card.paid { border-left-color: var(--green); opacity: 0.7; } /* Paga */
+
+    /* 2. CARD CONTADOR (Almoço, Café) */
+    .card-counter {
+        background: var(--card-bg);
+        border-radius: 8px;
+        padding: 10px 12px;
+        margin-bottom: 8px;
+        box-shadow: var(--shadow);
+        border-left: 4px solid var(--accent);
+        display: flex;
+        flex-direction: column;
+    }
+    .counter-top {
+        display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: 600;
+    }
+    .counter-controls {
+        display: flex; justify-content: space-between; align-items: center; background: #f7f9fa; border-radius: 6px; padding: 4px;
+    }
+    .btn-qty {
+        background: #fff; border: 1px solid #ddd; width: 25px; height: 25px; border-radius: 4px; cursor: pointer; font-weight: bold; color: var(--accent); display: flex; align-items: center; justify-content: center;
+    }
+    .btn-qty:hover { background: var(--accent); color: white; }
+    .qty-display { font-size: 0.9rem; color: var(--text); }
+
+    /* 3. CARD AGRUPADOR (Cartão de Crédito / Fatura) */
+    details.group-card {
+        background: var(--card-bg);
+        border-radius: 8px;
+        margin-bottom: 8px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        border: 1px solid #eee;
+    }
+    
+    summary.group-header {
+        padding: 12px;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        list-style: none; /* Remove seta padrão */
+        font-weight: 600;
+        background: #fff;
+    }
+    summary.group-header:hover { background: #fdfdfd; }
+    
+    /* Indicador visual se está aberto ou fechado */
+    summary.group-header::after { content: '▼'; font-size: 0.7em; color: #aaa; transition: 0.2s; }
+    details[open] summary.group-header::after { transform: rotate(180deg); }
+
+    .group-total { color: var(--red); font-family: monospace; font-size: 1.1em; }
+
+    .group-items {
+        background: #f9f9f9;
+        padding: 5px 10px 10px 10px;
+        border-top: 1px solid #eee;
+    }
+    
+    .sub-item {
+        display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #e0e0e0; font-size: 0.85rem; color: #555;
+    }
+    .sub-item:last-child { border-bottom: none; }
+
+</style>
+</head>
+<body>
+
+<div id="top-bar">
+    <h1>Fluxo 2026</h1>
+    <div class="input-wrapper">
+        <input type="text" id="cmd-input" placeholder="Digite: 'Almoço' ou 'Nubank 300'..." autofocus>
+    </div>
+    <div style="font-weight: bold; color: var(--red);">Total Previsto: R$ 3.450</div>
+</div>
+
+<div id="board">
+    
+    <div class="month-col">
+        <div class="month-header">
+            FEVEREIRO
+            <span style="font-size:0.9em; color:#888">Atual</span>
+        </div>
+        
+        <div class="month-body">
+            
+            <div class="section-title">Variáveis Recorrentes</div>
+            
+            <div class="card-counter">
+                <div class="counter-top">
+                    <span>Almoço Facul (R$ 12)</span>
+                    <span>R$ 60,00</span> </div>
+                <div class="counter-controls">
+                    <div class="btn-qty">-</div>
+                    <span class="qty-display">5 un</span>
+                    <div class="btn-qty">+</div>
+                </div>
+            </div>
+
+            <div class="card-counter" style="border-left-color: #f39c12;">
+                <div class="counter-top">
+                    <span>Café Manhã (R$ 6)</span>
+                    <span>R$ 18,00</span>
+                </div>
+                <div class="counter-controls">
+                    <div class="btn-qty">-</div>
+                    <span class="qty-display">3 un</span>
+                    <div class="btn-qty">+</div>
+                </div>
+            </div>
+
+            <div class="section-title">Faturas & Cartões</div>
+            
+            <details class="group-card">
+                <summary class="group-header">
+                    <span>🟣 Nubank Final 8090</span>
+                    <span class="group-total">R$ 1.250</span>
+                </summary>
+                <div class="group-items">
+                    <div class="sub-item"><span>Uber (15/02)</span> <span>25,00</span></div>
+                    <div class="sub-item"><span>Ifood (16/02)</span> <span>45,00</span></div>
+                    <div class="sub-item"><span>Cadeira (1/10)</span> <span>200,00</span></div>
+                    <div class="sub-item"><span>Amazon AWS</span> <span>150,00</span></div>
+                    <div class="sub-item"><span>Spotify</span> <span>21,90</span></div>
+                </div>
+            </details>
+
+             <details class="group-card" open>
+                <summary class="group-header">
+                    <span>🟠 Inter Final 1122</span>
+                    <span class="group-total">R$ 1.500</span>
+                </summary>
+                <div class="group-items">
+                    <div class="sub-item"><span>Aluguel (Pix Agendado)</span> <span>1.200,00</span></div>
+                    <div class="sub-item"><span>Internet</span> <span>120,00</span></div>
+                    <div class="sub-item"><span>Luz (Estimada)</span> <span>180,00</span></div>
+                </div>
+            </details>
+
+
+            <div class="section-title">Outros</div>
+            <div class="card bill">
+                <span>Academia</span>
+                <span style="font-weight:bold">-110,00</span>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="month-col">
+        <div class="month-header">MARÇO</div>
+        <div class="month-body">
+            
+            <div class="section-title">Faturas</div>
+            <details class="group-card">
+                <summary class="group-header">
+                    <span>🟣 Nubank Final 8090</span>
+                    <span class="group-total">R$ 200</span>
+                </summary>
+                <div class="group-items">
+                    <div class="sub-item"><span>Cadeira (2/10)</span> <span>200,00</span></div>
+                </div>
+            </details>
+
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>

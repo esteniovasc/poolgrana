@@ -1,0 +1,531 @@
+:root {
+	--bg: #f4f6f8;
+	--col-bg: #e3e5e8;
+	--card-bg: #ffffff;
+	--text: #2c3e50;
+	--text-sub: #7f8c8d;
+	--accent: #3498db;
+	--green: #27ae60;
+	--red: #c0392b;
+	--projection: #e67e22;
+	/* Laranja para projeções */
+	--shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+	--radius: 8px;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	background: var(--bg);
+	color: var(--text);
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+	height: 100vh;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+
+/* --- TOPO --- */
+#top-bar {
+	background: #fff;
+	padding: 15px 20px;
+	border-bottom: 1px solid #ddd;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+	z-index: 10;
+}
+
+h1 {
+	margin: 0;
+	font-size: 1.2rem;
+	color: var(--text);
+}
+
+.input-wrapper {
+	display: flex;
+	background: #f0f2f5;
+	border-radius: var(--radius);
+	padding: 5px;
+	width: 50%;
+}
+
+#cmd-input {
+	background: transparent;
+	border: none;
+	outline: none;
+	flex: 1;
+	padding: 8px;
+	font-size: 0.95rem;
+	color: var(--text);
+}
+
+#status-bar {
+	display: flex;
+	align-items: center;
+	gap: 15px;
+	font-size: 0.9rem;
+	color: var(--text-sub);
+}
+
+.status-item {
+	display: flex;
+	flex-direction: column;
+	/* Label em cima, valor embaixo */
+	align-items: flex-end;
+}
+
+.status-label {
+	font-size: 0.7rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	color: #95a5a6;
+	margin-bottom: 2px;
+}
+
+.status-separator {
+	width: 1px;
+	height: 30px;
+	background: #ddd;
+}
+
+#current-month-balance,
+#future-balance {
+	font-size: 1.1rem;
+	color: var(--text);
+}
+
+.value-positive {
+	color: var(--green) !important;
+}
+
+.value-negative {
+	color: var(--red) !important;
+}
+
+/* --- LAYOUT PRINCIPAL --- */
+#main-container {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	/* Scroll movido para o wrapper interno */
+	position: relative;
+}
+
+/* --- WRAPPER UNIFICADO --- */
+#board-wrapper {
+	flex: 1;
+	overflow: auto;
+	/* Scroll Horizontal e Vertical Unificados aqui */
+	position: relative;
+	display: flex;
+	flex-direction: column;
+}
+
+/* --- TIMELINE HEADER --- */
+#timeline-header {
+	display: flex;
+	position: sticky;
+	top: 0;
+	z-index: 10;
+	background: #f4f6f8;
+	/* Cor do fundo para não ficar transparente */
+	border-bottom: 2px solid #ddd;
+	/* Largura será definida pelo conteúdo (Grid) implícitamente ou JS */
+	min-width: min-content;
+}
+
+.header-spacer {
+	min-width: 200px;
+	background: #f4f6f8;
+	position: sticky;
+	left: 0;
+	z-index: 11;
+	/* Acima dos headers normais e do grid */
+	border-right: 1px solid #ddd;
+
+	/* Configuração do Título */
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-weight: bold;
+	color: var(--text-sub);
+	font-size: 0.9rem;
+	text-transform: uppercase;
+	letter-spacing: 1px;
+}
+
+.header-spacer::after {
+	content: "Despesas Fixas";
+}
+
+.month-header-cell {
+	min-width: 200px;
+	padding: 10px;
+	font-weight: bold;
+	text-align: center;
+	border-right: 1px solid #eee;
+	background: #fff;
+}
+
+/* --- TIMELINE FIXA (GRID) --- */
+#fixed-timeline {
+	display: grid;
+	/* Grid Template Columns definidos via JS */
+	background: var(--bg);
+	/* Não tem mais overflow auto aqui pro grid se expandir */
+}
+
+/* Células do Grid */
+.grid-row-label {
+	background: #fff;
+	border-right: 1px solid #ddd;
+	border-bottom: 1px solid #eee;
+	padding: 8px 12px;
+	font-size: 0.9rem;
+	font-weight: 500;
+	display: flex;
+	align-items: center;
+
+	/* Configuração Sticky Left */
+	position: sticky;
+	left: 0;
+	z-index: 5;
+
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	/* Garante altura mínima igual às células */
+	min-height: 50px;
+}
+
+.grid-cell {
+	border-right: 1px solid #ebebeb;
+	border-bottom: 1px solid #eee;
+	min-height: 50px;
+	position: relative;
+	padding: 4px;
+	background: #fff;
+	/* Stack cards vertically */
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+/* SEPARADOR */
+.separator-line {
+	height: 4px;
+	background: #ccc;
+	position: sticky;
+	left: 0;
+	/* Estende por tudo? Não, é um divisor de fluxo */
+	/* Na verdade, o separador pode ser apenas visual entre os blocos */
+	margin: 10px 0;
+}
+
+/* --- FLUXO VARIÁVEL (KANBAN) --- */
+#variable-board {
+	display: flex;
+	/* Alinhamento com o grid superior */
+	padding-left: 200px;
+	/* Compensa a coluna de labels sticky */
+	min-width: min-content;
+	/* Força expandir */
+}
+
+.variable-col {
+	min-width: 200px;
+	width: 200px;
+	border-right: 1px solid #ccc;
+	display: flex;
+	flex-direction: column;
+	min-height: 300px;
+	/* Altura mínima visual */
+	background: var(--bg);
+}
+
+.variable-col-header {
+	/* Header não é necessário aqui pois já temos o topo geral, 
+       mas pode ser útil para totais do mês variável */
+	display: none;
+}
+
+.variable-col-body {
+	flex: 1;
+	padding: 10px;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+/* --- CARDS ADJUSTMENTS --- */
+.card {
+	margin: 0;
+	/* Margem controlada pelo container */
+	font-size: 0.85rem;
+}
+
+
+/* --- ZONAS / SEPARADORES --- */
+.section-title {
+	font-size: 0.75rem;
+	text-transform: uppercase;
+	color: var(--text-sub);
+	font-weight: 700;
+	margin: 10px 0 5px 5px;
+	letter-spacing: 0.5px;
+}
+
+/* --- CARDS --- */
+.card {
+	background: var(--card-bg);
+	padding: 12px;
+	border-radius: var(--radius);
+	box-shadow: var(--shadow);
+	border-left: 4px solid transparent;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	cursor: grab;
+	user-select: none;
+	transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.card:active {
+	cursor: grabbing;
+	transform: scale(1.02);
+	box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.card.dragging {
+	opacity: 0.5;
+	background: #f8f9fa;
+}
+
+/* Tipos de Transação */
+.card.expense {
+	border-left-color: var(--red);
+}
+
+.card.income {
+	border-left-color: var(--green);
+}
+
+.card.projected {
+	border-left-color: var(--projection);
+	border-style: dashed;
+}
+
+/* Estilo tracejado se possível, ou borda sólida laranja */
+.card.projected {
+	border-left: 4px dashed var(--projection);
+}
+
+/* Conteúdo do Card */
+.card-desc {
+	font-weight: 500;
+	font-size: 0.95rem;
+}
+
+.card-value {
+	font-weight: 600;
+	font-size: 0.9rem;
+}
+
+.card-value.negative {
+	color: var(--red);
+}
+
+.card-value.positive {
+	color: var(--green);
+}
+
+/* Contador */
+.card-counter {
+	background: var(--card-bg);
+	border-radius: var(--radius);
+	padding: 10px 12px;
+	box-shadow: var(--shadow);
+	border-left: 4px solid var(--accent);
+	display: flex;
+	flex-direction: column;
+	cursor: grab;
+}
+
+.counter-top {
+	display: flex;
+	justify-content: space-between;
+	margin-bottom: 8px;
+	font-weight: 600;
+}
+
+.counter-controls {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	background: #f7f9fa;
+	border-radius: 6px;
+	padding: 4px;
+}
+
+#top-bar {
+	display: flex;
+	align-items: center;
+	padding: 0 20px;
+	height: 60px;
+	background: #fff;
+	border-bottom: 1px solid #ddd;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+	gap: 20px;
+}
+
+#file-actions {
+	display: flex;
+	gap: 10px;
+}
+
+#file-actions button {
+	background: transparent;
+	border: 1px solid #ddd;
+	padding: 6px 12px;
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: 14px;
+	color: #555;
+	transition: all 0.2s;
+}
+
+#file-actions button:hover {
+	background: #f5f5f5;
+	color: var(--primary);
+	border-color: var(--primary);
+}
+
+.btn-qty {
+	background: #fff;
+	border: 1px solid #ddd;
+	width: 25px;
+	height: 25px;
+	border-radius: 4px;
+	cursor: pointer;
+	font-weight: bold;
+	color: var(--accent);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.btn-qty:hover {
+	background: var(--accent);
+	color: white;
+}
+
+/* Agrupador */
+details.group-card {
+	background: var(--card-bg);
+	border-radius: var(--radius);
+	box-shadow: var(--shadow);
+	overflow: hidden;
+	border: 1px solid #eee;
+}
+
+summary.group-header {
+	padding: 12px;
+	cursor: pointer;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	list-style: none;
+	font-weight: 600;
+	background: #fff;
+}
+
+summary.group-header::after {
+	content: '▼';
+	font-size: 0.7em;
+	color: #aaa;
+	transition: 0.2s;
+}
+
+details[open] summary.group-header::after {
+	transform: rotate(180deg);
+}
+
+.group-items {
+	background: #f9f9f9;
+	padding: 5px 10px 10px 10px;
+	border-top: 1px solid #eee;
+}
+
+/* --- MODAL --- */
+dialog {
+	border: none;
+	border-radius: 12px;
+	box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+	padding: 20px;
+	width: 300px;
+	font-family: inherit;
+}
+
+dialog::backdrop {
+	background: rgba(0, 0, 0, 0.4);
+}
+
+.form-group {
+	margin-bottom: 15px;
+}
+
+.form-group label {
+	display: block;
+	margin-bottom: 5px;
+	font-size: 0.9rem;
+	color: var(--text-sub);
+}
+
+.form-group input,
+.form-group select {
+	width: 100%;
+	padding: 8px;
+	border: 1px solid #ddd;
+	border-radius: 6px;
+	outline: none;
+}
+
+.modal-actions {
+	display: flex;
+	justify-content: space-between;
+	margin-top: 20px;
+}
+
+.right-actions {
+	display: flex;
+	gap: 10px;
+}
+
+button {
+	padding: 8px 12px;
+	border: none;
+	border-radius: 6px;
+	cursor: pointer;
+	font-weight: 500;
+}
+
+.btn-primary {
+	background: var(--accent);
+	color: white;
+}
+
+.btn-danger {
+	background: #ffebee;
+	color: var(--red);
+}
+
+#btn-cancel {
+	background: #eee;
+	color: var(--text);
+}

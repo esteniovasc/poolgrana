@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Poolgrana</title>
+	<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+	<div id="top-bar">
+		<h1>Poolgrana</h1>
+		<div class="input-wrapper">
+			<input type="text" id="cmd-input" placeholder="Digite: 'Netflix -50' ou 'Salário +3000'..." autofocus>
+		</div>
+
+		<!-- Ações de Arquivo -->
+		<div id="file-actions">
+			<button id="btn-save" title="Salvar Projeto (Download JSON)">💾 Salvar</button>
+			<button id="btn-load" title="Abrir Projeto (Carregar JSON)">📂 Abrir</button>
+			<input type="file" id="file-input" style="display: none;" accept=".json">
+		</div>
+
+		<div id="status-bar">
+			<div class="status-item">
+				<span class="status-label" id="current-month-label">MÊS ATUAL</span>
+				<div class="status-values">
+					<strong id="current-month-balance" class="value-positive">R$ 0,00</strong>
+				</div>
+			</div>
+			<div class="status-separator"></div>
+			<div class="status-item">
+				<span class="status-label">ACUMULADO (VISÍVEL)</span>
+				<strong id="future-balance">R$ 0,00</strong>
+			</div>
+		</div>
+	</div>
+
+	<!-- Container Principal com Scroll Vertical (Global da Página, se necessário) -->
+	<main id="main-container">
+
+		<!-- WRAPPER DE SCROLL HORIZONTAL UNIFICADO -->
+		<div id="board-wrapper">
+
+			<!-- SEÇÃO 1: TIMELINE FIXA (SWIMLANES) -->
+			<!-- Cabeçalho das Colunas (Meses) - Sticky Top -->
+			<div id="timeline-header">
+				<!-- Injetado via JS -->
+			</div>
+
+			<div id="fixed-timeline">
+				<!-- Grid injetado via JS -->
+			</div>
+
+			<!-- SEPARADOR VISUAL -->
+			<div class="separator-line"></div>
+
+			<!-- SEÇÃO 2: FLUXO VARIÁVEL (KANBAN) -->
+			<div id="variable-board">
+				<!-- Colunas independentes injetadas via JS -->
+			</div>
+
+		</div>
+
+	</main>
+
+
+	<!-- MODAL DE EDIÇÃO -->
+	<dialog id="edit-modal">
+		<form id="edit-form" method="dialog">
+			<h3>Editar Transação</h3>
+
+			<div class="form-group">
+				<label for="edit-desc">Descrição</label>
+				<input type="text" id="edit-desc" required>
+			</div>
+
+			<div class="form-group">
+				<label for="edit-value">Valor (R$)</label>
+				<input type="number" id="edit-value" step="0.01" required>
+			</div>
+
+			<div class="form-group">
+				<label for="edit-date">Data</label>
+				<input type="date" id="edit-date" required>
+			</div>
+
+			<div class="form-group">
+				<label for="edit-type">Tipo</label>
+				<select id="edit-type">
+					<option value="variable">Variável</option>
+					<option value="fixed">Fixo / Parcelado</option>
+				</select>
+			</div>
+
+			<div class="modal-actions">
+				<button type="button" id="btn-delete" class="btn-danger">Excluir</button>
+				<div class="right-actions">
+					<button type="button" id="btn-cancel">Cancelar</button>
+					<button type="submit" id="btn-save" class="btn-primary">Salvar</button>
+				</div>
+			</div>
+		</form>
+	</dialog>
+
+	<script type="module" src="app.js"></script>
+</body>
+
+</html>
