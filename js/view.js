@@ -16,6 +16,7 @@ export class View {
 		// Elementos de Totais
 		this.elCurrentMonthLabel = document.getElementById('current-month-label');
 		this.elCurrentMonthBalance = document.getElementById('current-month-balance');
+		this.elCurrentMonthFixedExpenses = document.getElementById('current-month-fixed-expenses');
 		this.elFutureBalance = document.getElementById('future-balance');
 
 		// Observer para ocultar linhas vazias ao scrollar
@@ -100,6 +101,7 @@ export class View {
 			let balance = 0;
 			let income = 0;
 			let expense = 0;
+			let fixedExpense = 0; // Somente gastos fixos e negativos
 
 			// Somar Fixos
 			Object.values(fixedGroups).forEach(groupData => {
@@ -107,7 +109,12 @@ export class View {
 				if (transactions) {
 					transactions.forEach(t => {
 						balance += t.value;
-						if (t.value >= 0) income += t.value; else expense += t.value;
+						if (t.value >= 0) {
+							income += t.value;
+						} else {
+							expense += t.value;
+							fixedExpense += t.value;
+						}
 					});
 				}
 			});
@@ -119,7 +126,7 @@ export class View {
 				if (t.value >= 0) income += t.value; else expense += t.value;
 			});
 
-			return { balance, income, expense, date };
+			return { balance, income, expense, fixedExpense, date };
 		});
 	}
 
@@ -334,6 +341,11 @@ export class View {
 		if (this.elCurrentMonthBalance) {
 			this.elCurrentMonthBalance.textContent = fmt.format(currentData.balance);
 			this.elCurrentMonthBalance.className = currentData.balance >= 0 ? 'value-positive' : 'value-negative';
+		}
+
+		if (this.elCurrentMonthFixedExpenses) {
+			this.elCurrentMonthFixedExpenses.textContent = fmt.format(currentData.fixedExpense);
+			// como é gasto, sempre será negativo, então mantemos a classe value-negative fixada no HTML
 		}
 
 		// Calcular Acumulado (Do mês ativo até o fim do futuro)
