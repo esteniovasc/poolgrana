@@ -120,10 +120,18 @@
 			<button type="button" id="tl-btn-prev" class="tl-nav-btn">◀</button>
 			<div class="tl-title-group">
 				<h3 id="tl-month-title">Mês</h3>
-				<span class="tl-start-balance-label">Saldo Inicial: <strong id="tl-start-balance">R$
-						0,00</strong></span>
+				<span class="tl-start-balance-label" id="tl-start-balance-container" style="display:none;">Saldo
+					Herdado: <strong id="tl-start-balance">R$ 0,00</strong></span>
 			</div>
-			<button type="button" id="tl-btn-next" class="tl-nav-btn">▶</button>
+
+			<div class="tl-actions-group">
+				<label class="switch-container">
+					<input type="checkbox" id="tl-toggle-carryover">
+					<span class="slider round"></span>
+				</label>
+				<span class="switch-label">Somar Saldo Anterior</span>
+				<button type="button" id="tl-btn-next" class="tl-nav-btn">▶</button>
+			</div>
 			<button type="button" id="tl-btn-close" class="btn-close">×</button>
 		</div>
 		<div id="timeline-content" class="timeline-container">

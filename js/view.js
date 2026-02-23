@@ -78,8 +78,10 @@ export class View {
 		this.tlBtnPrev = document.getElementById('tl-btn-prev');
 		this.tlBtnNext = document.getElementById('tl-btn-next');
 		this.tlMonthTitle = document.getElementById('tl-month-title');
+		this.tlStartBalanceContainer = document.getElementById('tl-start-balance-container');
 		this.tlStartBalance = document.getElementById('tl-start-balance');
 		this.timelineContent = document.getElementById('timeline-content');
+		this.tlToggleCarryover = document.getElementById('tl-toggle-carryover');
 
 		this.tlCurrentYear = this.currentDate.getFullYear();
 		this.tlCurrentMonth = this.currentDate.getMonth();
@@ -88,6 +90,10 @@ export class View {
 			this.tlBtnClose.addEventListener('click', () => this.timelineModal.close());
 			this.timelineModal.addEventListener('click', (e) => {
 				if (e.target === this.timelineModal) this.timelineModal.close();
+			});
+
+			this.tlToggleCarryover.addEventListener('change', () => {
+				this.renderTimeline(); // Re-renderizar com ou sem o saldo acumulado
 			});
 
 			this.tlBtnPrev.addEventListener('click', () => {
@@ -576,12 +582,26 @@ export class View {
 		}
 
 		// Método Definitivo para Saldo Inicial e Listagem:
-		// Baseado no request do usuário, vamos descartar o acumulado passado e focar 
-		// com Saldo Inicial de R$ 0,00 explícito para cada mês.
+		// Verificar o toggle para ver se deve calcular do começo ou se deve começar com R$ 0,00 explícito
 		let accumBalance = 0;
 
-		this.tlStartBalance.textContent = "- Ignorado -";
-		this.tlStartBalance.parentNode.style.display = 'none'; // ocultar o agrupamento de saldo inicial do HTML visual
+		if (this.tlToggleCarryover && this.tlToggleCarryover.checked) {
+			const dRange = this.getDateRange();
+			// Puxa e soma acumulado baseado em todos os cache dos views calculados
+			const viewCalc = this.computeMonthlyTotals(dRange, this.processTransactions(dRange).fixedGroups, this.processTransactions(dRange).variableByMonth);
+			for (let i = 0; i < viewCalc.length; i++) {
+				if (viewCalc[i].date < targetDate) {
+					accumBalance += viewCalc[i].balance;
+				}
+			}
+
+			this.tlStartBalanceContainer.style.display = 'inline-block';
+			this.tlStartBalance.textContent = fmt.format(accumBalance);
+			this.tlStartBalance.className = accumBalance >= 0 ? 'value-positive' : 'value-negative';
+		} else {
+			// Não soma o saldoHerdado
+			this.tlStartBalanceContainer.style.display = 'none';
+		}
 
 		const { fixedGroups, variableByMonth } = this.processTransactions([targetDate]);
 
@@ -589,11 +609,26 @@ export class View {
 		const events = []; // Array de { day: int, transactions: [] }
 		const tlData = {}; // day -> []
 
+		// Se tem saldo herdado, vamos simular que ele caiu na conta no Dia 1 do Mês corrente
+		if (this.tlToggleCarryover && this.tlToggleCarryover.checked && accumBalance !== 0) {
+			tlData[1] = [{
+				id: 'simulated-carryover',
+				description: 'Saldo Herdado Anterior',
+				value: accumBalance,
+				date: `${this.tlCurrentYear}-${String(this.tlCurrentMonth + 1).padStart(2, '0')}-01`,
+				type: 'variable',
+				isSimulatedCarryover: true
+			}];
+		}
+
 		// Injeta Vars
 		const vars = variableByMonth[currentMonthKey] || [];
 		vars.forEach(t => {
 			const d = parseInt(t.date.split('-')[2]); // extrai dd
 			if (!tlData[d]) tlData[d] = [];
+
+			// Somente adiciona se for transação real, para não duplicar saldo inicial por acidente na renderização bruta do view vars.
+			// Na verdade vars já tem só as transações do Store, então tá seguro.
 			tlData[d].push(t);
 		});
 
@@ -612,7 +647,9 @@ export class View {
 
 		// Render HTMl
 		this.timelineContent.innerHTML = '';
-		let runningTotal = accumBalance;
+		// A variavel runningTotal inicia com 0 porque o accumBalance (Saldo Herdado)
+		// agora é contabilizado somando como um evento injetado no tlData[1]
+		let runningTotal = 0;
 
 		// Ordenar dias
 		const sortedDays = Object.keys(tlData).map(Number).sort((a, b) => a - b);
@@ -642,6 +679,16 @@ export class View {
 			dayTx.forEach(t => {
 				const tDiv = document.createElement('div');
 				tDiv.className = `tl-item ${t.value >= 0 ? 'income' : 'expense'}`;
+
+				// Se for o saldo simulado, aplicar um estilo extra sutil se desejar
+				if (t.isSimulatedCarryover) {
+					tDiv.style.background = '#f8f9fa';
+					tDiv.style.borderStyle = 'dashed';
+					tDiv.style.borderWidth = '1px';
+					tDiv.style.borderColor = '#ccc';
+					tDiv.style.borderLeft = `3px solid ${t.value >= 0 ? 'var(--green)' : 'var(--red)'}`;
+				}
+
 				const vStr = fmt.format(t.value);
 				tDiv.innerHTML = `<span class="tl-item-desc">${t.description}</span><span style="color: ${t.value >= 0 ? 'var(--green)' : 'var(--red)'}">${t.value > 0 ? '+' + vStr : vStr}</span>`;
 				evDiv.appendChild(tDiv);

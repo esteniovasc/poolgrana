@@ -584,6 +584,75 @@ dialog.modal-large:not([open]) {
 	color: var(--text-sub);
 }
 
+.tl-actions-group {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.switch-label {
+	font-size: 0.8rem;
+	color: var(--text-sub);
+	font-weight: 600;
+	margin-right: 15px;
+}
+
+/* Switch UI */
+.switch-container {
+	position: relative;
+	display: inline-block;
+	width: 40px;
+	height: 20px;
+}
+
+.switch-container input {
+	opacity: 0;
+	width: 0;
+	height: 0;
+}
+
+.slider {
+	position: absolute;
+	cursor: pointer;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-color: #ccc;
+	transition: .4s;
+}
+
+.slider:before {
+	position: absolute;
+	content: "";
+	height: 14px;
+	width: 14px;
+	left: 3px;
+	bottom: 3px;
+	background-color: white;
+	transition: .4s;
+}
+
+input:checked+.slider {
+	background-color: var(--accent);
+}
+
+input:focus+.slider {
+	box-shadow: 0 0 1px var(--accent);
+}
+
+input:checked+.slider:before {
+	transform: translateX(20px);
+}
+
+.slider.round {
+	border-radius: 24px;
+}
+
+.slider.round:before {
+	border-radius: 50%;
+}
+
 .tl-nav-btn {
 	background: transparent;
 	border: none;
