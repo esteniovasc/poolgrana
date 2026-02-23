@@ -35,8 +35,25 @@ export class View {
 		this.editForm = document.getElementById('edit-form');
 		this.btnDelete = document.getElementById('btn-delete');
 		this.btnCancel = document.getElementById('btn-cancel');
+		this.editValueInput = document.getElementById('edit-value');
 
 		// Listeners do Modal
+		// Interceptar setas no campo de valor para pular de R$ 1 em R$ 1 (ao invés dos centavos definidos no step HTML)
+		if (this.editValueInput) {
+			this.editValueInput.addEventListener('keydown', (e) => {
+				if (e.key === 'ArrowUp') {
+					e.preventDefault();
+					const val = parseFloat(this.editValueInput.value) || 0;
+					// Mantém os centavos mas aumenta a parte inteira
+					this.editValueInput.value = (val + 1).toFixed(2);
+				} else if (e.key === 'ArrowDown') {
+					e.preventDefault();
+					const val = parseFloat(this.editValueInput.value) || 0;
+					// Mantém os centavos mas diminui a parte inteira
+					this.editValueInput.value = (val - 1).toFixed(2);
+				}
+			});
+		}
 		this.btnCancel.addEventListener('click', () => this.editModal.close());
 		this.editModal.addEventListener('click', (e) => {
 			if (e.target === this.editModal) this.editModal.close(); // Fechar ao clicar fora
