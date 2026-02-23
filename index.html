@@ -17,7 +17,7 @@
 			Poolgrana
 		</h1>
 		<div class="input-wrapper">
-			<input type="text" id="cmd-input" placeholder="Digite: 'Netflix -50' ou 'Salário +3000'..." autofocus>
+			<input type="text" id="cmd-input" placeholder="Digite: 'Netflix -50' ou 'Salário +3000'...">
 		</div>
 
 		<!-- Ações de Arquivo -->
@@ -117,22 +117,29 @@
 	<!-- MODAL DE LINHA DO TEMPO (DIÁRIO) -->
 	<dialog id="timeline-modal" class="modal-large">
 		<div class="timeline-header-container">
-			<button type="button" id="tl-btn-prev" class="tl-nav-btn">◀</button>
-			<div class="tl-title-group">
-				<h3 id="tl-month-title">Mês</h3>
-				<span class="tl-start-balance-label" id="tl-start-balance-container" style="display:none;">Saldo
-					Herdado: <strong id="tl-start-balance">R$ 0,00</strong></span>
+			<div class="tl-top-bar">
+				<div class="tl-title-area">
+					<h2 class="tl-main-title">Visão de Extrato</h2>
+					<div class="tl-actions-group">
+						<label class="switch-container">
+							<input type="checkbox" id="tl-toggle-carryover" checked>
+							<span class="slider round"></span>
+						</label>
+						<span class="switch-label">Somar Saldo Anterior</span>
+					</div>
+				</div>
+				<button type="button" id="tl-btn-close" class="btn-close">×</button>
 			</div>
 
-			<div class="tl-actions-group">
-				<label class="switch-container">
-					<input type="checkbox" id="tl-toggle-carryover">
-					<span class="slider round"></span>
-				</label>
-				<span class="switch-label">Somar Saldo Anterior</span>
+			<div class="tl-month-nav">
+				<button type="button" id="tl-btn-prev" class="tl-nav-btn">◀</button>
+				<div class="tl-title-group">
+					<h3 id="tl-month-title">Mês</h3>
+					<span class="tl-start-balance-label" id="tl-start-balance-container" style="display:none;">Saldo
+						Herdado: <strong id="tl-start-balance">R$ 0,00</strong></span>
+				</div>
 				<button type="button" id="tl-btn-next" class="tl-nav-btn">▶</button>
 			</div>
-			<button type="button" id="tl-btn-close" class="btn-close">×</button>
 		</div>
 		<div id="timeline-content" class="timeline-container">
 			<!-- Injetado via JS -->

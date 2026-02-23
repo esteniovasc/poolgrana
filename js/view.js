@@ -93,6 +93,7 @@ export class View {
 			});
 
 			this.tlToggleCarryover.addEventListener('change', () => {
+				this.tlToggleCarryover.blur(); // Remove do foco para evitar interferência na seta
 				this.renderTimeline(); // Re-renderizar com ou sem o saldo acumulado
 			});
 

@@ -62,10 +62,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	// Atalho de Teclado: '/' para focar na Omnibox
 	document.addEventListener('keydown', (e) => {
-		// Ignorar se já estiver em um input ou textarea ou contenteditable
-		const activeTag = document.activeElement.tagName.toLowerCase();
-		if (activeTag === 'input' || activeTag === 'textarea' || document.activeElement.isContentEditable) {
-			return;
+		const tlModalOpen = document.getElementById('timeline-modal')?.open;
+
+		// Se a timeline estivér aberta, ignore os atalhos de input para não bugar!
+		if (!tlModalOpen) {
+			// Ignorar se já estiver em um input ou textarea ou contenteditable
+			const activeTag = document.activeElement.tagName.toLowerCase();
+			if (activeTag === 'input' || activeTag === 'textarea' || document.activeElement.isContentEditable) {
+				return;
+			}
 		}
 
 		// Ignorar se o modal estiver aberto
@@ -98,12 +103,15 @@ document.addEventListener('DOMContentLoaded', () => {
 					tlModal.close();
 				} else {
 					view.openTimelineModal();
+					document.activeElement?.blur(); // Tira o foco do doc active p/ as setas funcionarem direto na timeline
 				}
 			}
 		}
 
 		// Atalhos rápidos seta para direita/esquerda dentro da timeline
 		const tlModal = document.getElementById('timeline-modal');
+		// O `document.activeElement` pode estar contido no modal, 
+		// mas mesmo focado indiretamente ou em document.body, a seta funciona.
 		if (tlModal && tlModal.open) {
 			if (e.key === 'ArrowRight') {
 				e.preventDefault();
