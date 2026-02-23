@@ -116,4 +116,17 @@ export class Store {
 		this.save();
 		return cc;
 	}
+
+	removeCreditCard(id) {
+		this.creditCards = this.creditCards.filter(c => c.id !== id);
+
+		// Desvincula dos items
+		this.transactions.forEach(t => {
+			if (t.creditCardId === id) {
+				t.creditCardId = null;
+			}
+		});
+
+		this.save();
+	}
 }

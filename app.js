@@ -221,4 +221,55 @@ document.addEventListener('DOMContentLoaded', () => {
 			view.render();
 		});
 	}
+
+	// Botões e Lógica de Gerenciar Cartões Clicando na Ilha
+	const btnManageCc = document.getElementById('btn-manage-cc');
+	const ccManagerModal = document.getElementById('cc-manager-modal');
+	const ccManagerContent = document.getElementById('cc-manager-content');
+
+	if (btnManageCc && ccManagerModal) {
+		btnManageCc.addEventListener('click', () => {
+			renderCcManager();
+			ccManagerModal.showModal();
+			document.activeElement?.blur();
+		});
+	}
+
+	function renderCcManager() {
+		ccManagerContent.innerHTML = '';
+
+		if (!store.creditCards || store.creditCards.length === 0) {
+			ccManagerContent.innerHTML = '<div style="text-align:center; padding: 20px; color: #999;">Nenhum cartão cadastrado.</div>';
+			return;
+		}
+
+		store.creditCards.forEach(cc => {
+			const item = document.createElement('div');
+			item.className = 'cc-manager-item';
+
+			item.innerHTML = `
+				<div class="cc-manager-info">
+					<div class="cc-color-dot" style="background-color: ${cc.color};"></div>
+					<div>
+						<strong>${cc.name}</strong>
+						<div class="tl-balance-label" style="margin-top:2px;">Fatura: Fecha ${cc.closingDay} | Vence ${cc.dueDay}</div>
+					</div>
+				</div>
+				<div class="cc-manager-actions">
+					<button class="btn-danger" style="padding: 5px 10px; font-size: 0.8rem;">Remover</button>
+				</div>
+			`;
+
+			const btnRemove = item.querySelector('.btn-danger');
+			btnRemove.addEventListener('click', () => {
+				if (confirm(`Tem certeza que deseja remover o cartão ${cc.name}? As transações antigas ficarão sem cartão.`)) {
+					store.removeCreditCard(cc.id);
+					renderCcManager(); // Atualiza painel
+					view.render();     // Atualiza background
+				}
+			});
+
+			ccManagerContent.appendChild(item);
+		});
+	}
 });
