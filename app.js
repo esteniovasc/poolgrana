@@ -82,6 +82,12 @@ document.addEventListener('DOMContentLoaded', () => {
 				cmdInput.focus();
 			}
 		}
+
+		// Novo atalho: 'p' para alternar o esmaecimento de contas antigas/pagas
+		if (e.key.toLowerCase() === 'p') {
+			e.preventDefault();
+			document.body.classList.toggle('fade-past-active');
+		}
 	});
 
 	// --- Lógica de Salvar / Abrir ---

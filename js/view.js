@@ -406,6 +406,17 @@ export class View {
 		card.className = `card ${transaction.value >= 0 ? 'income' : 'expense'}`;
 		if (transaction.status === 'projected') card.classList.add('projected');
 
+		// Verifica se a data do cartão já passou para aplicar a classe 'is-past'
+		const today = new Date();
+		const yyyy = today.getFullYear();
+		const mm = String(today.getMonth() + 1).padStart(2, '0');
+		const dd = String(today.getDate()).padStart(2, '0');
+		const todayStr = `${yyyy}-${mm}-${dd}`;
+
+		if (transaction.date < todayStr) {
+			card.classList.add('is-past');
+		}
+
 		card.draggable = true;
 		card.dataset.id = transaction.id;
 
