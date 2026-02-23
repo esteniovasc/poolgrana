@@ -217,9 +217,9 @@ export class View {
 			const cell = document.createElement('div');
 			cell.className = 'month-header-cell';
 
-			// Destaque para mês atual
-			const isCurrent = (year === this.currentDate.getFullYear() && month === this.currentDate.getMonth());
-			if (isCurrent) cell.style.color = 'var(--accent)';
+			// Destaque visual
+			// Inicia sem a cor blue acentuada se não for explicitamente ativada no scroll
+			// (A gestão do destaque agora está dentro do updateStatusDisplay)
 
 			cell.textContent = `${monthName} ${year}`;
 			this.timelineHeader.appendChild(cell);
@@ -387,7 +387,21 @@ export class View {
 		const currentData = this.monthlyTotals[activeIndex];
 		const monthName = currentData.date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
 
-		// Atualizar Mês Atual
+		// Manter em cache para que a Timeline Diária saiba qual mês abrir
+		this.tlCurrentYear = currentData.date.getFullYear();
+		this.tlCurrentMonth = currentData.date.getMonth();
+
+		// Atualizar Header Destaques: remover var(--accent) de todos, botar no activeIndex
+		const headers = this.timelineHeader.querySelectorAll('.month-header-cell');
+		headers.forEach((h, index) => {
+			if (index === activeIndex) {
+				h.style.color = 'var(--accent)';
+			} else {
+				h.style.color = ''; // resetar
+			}
+		});
+
+		// Atualizar Mês Atual (Barra Superior)
 		if (this.elCurrentMonthLabel) this.elCurrentMonthLabel.textContent = monthName.toUpperCase();
 
 		const fmt = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -496,11 +510,7 @@ export class View {
 
 	// --- LÓGICA DA LINHA DO TEMPO DIÁRIA ---
 	openTimelineModal() {
-		// Inicializa na data/mês atual ao abrir, se preferir
-		// default: a última visualizada, mas vamos resetar pro scroll atual se der?
-		// Para ficar simples, inicia no mês atual do sistema
-		this.tlCurrentYear = this.currentDate.getFullYear();
-		this.tlCurrentMonth = this.currentDate.getMonth();
+		// Abre na data que está atualmente visível na tela central (atualizado pelo scroll via this.tlCurrentYear e Month)
 		this.renderTimeline();
 		this.timelineModal.showModal();
 	}
