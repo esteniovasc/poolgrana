@@ -535,3 +535,194 @@ button {
 	background: #eee;
 	color: var(--text);
 }
+
+/* --- TIMELINE MODAL --- */
+dialog.modal-large {
+	width: 90vw;
+	max-width: 600px;
+	height: 80vh;
+	max-height: 800px;
+	display: flex;
+	/* only works properly with the open attribute handled via script normally, but dialog keeps it inline or flex depending on browser if not display: none. Use flex for inner layout */
+	flex-direction: column;
+	padding: 0;
+	overflow: hidden;
+}
+
+/* Fix for dialog default display */
+dialog.modal-large:not([open]) {
+	display: none;
+}
+
+.timeline-header-container {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 15px 20px;
+	background: var(--card-bg);
+	border-bottom: 1px solid #ddd;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+	position: relative;
+}
+
+.tl-title-group {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+}
+
+.tl-title-group h3 {
+	margin: 0 0 5px 0;
+	font-size: 1.2rem;
+	color: var(--text);
+	text-transform: uppercase;
+}
+
+.tl-start-balance-label {
+	font-size: 0.8rem;
+	color: var(--text-sub);
+}
+
+.tl-nav-btn {
+	background: transparent;
+	border: none;
+	font-size: 1.5rem;
+	color: var(--accent);
+	cursor: pointer;
+	padding: 5px 15px;
+	border-radius: 4px;
+}
+
+.tl-nav-btn:hover {
+	background: #f0f2f5;
+}
+
+.btn-close {
+	position: absolute;
+	right: 15px;
+	top: 15px;
+	background: transparent;
+	border: none;
+	font-size: 1.5rem;
+	color: var(--text-sub);
+	cursor: pointer;
+}
+
+.btn-close:hover {
+	color: var(--red);
+}
+
+.timeline-container {
+	flex: 1;
+	overflow-y: auto;
+	padding: 20px;
+	background: #fdfdfd;
+	display: flex;
+	flex-direction: column;
+	gap: 15px;
+}
+
+.tl-row {
+	display: flex;
+	align-items: flex-start;
+	gap: 15px;
+	position: relative;
+}
+
+/* Traço da linha do tempo conectando os dias */
+.tl-row::before {
+	content: '';
+	position: absolute;
+	left: 45px;
+	top: 30px;
+	bottom: -25px;
+	width: 2px;
+	background: #e3e5e8;
+	z-index: 1;
+}
+
+.tl-row:last-child::before {
+	display: none;
+}
+
+.tl-date {
+	min-width: 60px;
+	font-size: 0.85rem;
+	font-weight: 700;
+	color: var(--text-sub);
+	background: #fff;
+	padding: 5px;
+	border: 2px solid #e3e5e8;
+	border-radius: 8px;
+	text-align: center;
+	z-index: 2;
+}
+
+.tl-events {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	z-index: 2;
+}
+
+.tl-item {
+	background: #fff;
+	padding: 10px 15px;
+	border-radius: 6px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	font-size: 0.9rem;
+	border-left: 3px solid transparent;
+}
+
+.tl-item.income {
+	border-left-color: var(--green);
+}
+
+.tl-item.expense {
+	border-left-color: var(--red);
+}
+
+.tl-item-desc {
+	font-weight: 500;
+	color: var(--text);
+}
+
+.tl-balance-box {
+	min-width: 100px;
+	text-align: right;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	justify-content: center;
+	z-index: 2;
+}
+
+.tl-balance-label {
+	font-size: 0.65rem;
+	color: var(--text-sub);
+	text-transform: uppercase;
+	margin-bottom: 3px;
+}
+
+.tl-balance-val {
+	font-weight: 700;
+	font-size: 0.95rem;
+	padding: 4px 8px;
+	border-radius: 4px;
+	background: #f0f2f5;
+}
+
+.tl-balance-val.positive {
+	color: var(--green);
+	background: rgba(39, 174, 96, 0.1);
+}
+
+.tl-balance-val.negative {
+	color: var(--red);
+	background: rgba(192, 57, 43, 0.1);
+}

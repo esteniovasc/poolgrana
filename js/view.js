@@ -71,6 +71,43 @@ export class View {
 				this.deleteTransaction();
 			}
 		});
+
+		// Elementos da Linha do Tempo (Modal)
+		this.timelineModal = document.getElementById('timeline-modal');
+		this.tlBtnClose = document.getElementById('tl-btn-close');
+		this.tlBtnPrev = document.getElementById('tl-btn-prev');
+		this.tlBtnNext = document.getElementById('tl-btn-next');
+		this.tlMonthTitle = document.getElementById('tl-month-title');
+		this.tlStartBalance = document.getElementById('tl-start-balance');
+		this.timelineContent = document.getElementById('timeline-content');
+
+		this.tlCurrentYear = this.currentDate.getFullYear();
+		this.tlCurrentMonth = this.currentDate.getMonth();
+
+		if (this.timelineModal) {
+			this.tlBtnClose.addEventListener('click', () => this.timelineModal.close());
+			this.timelineModal.addEventListener('click', (e) => {
+				if (e.target === this.timelineModal) this.timelineModal.close();
+			});
+
+			this.tlBtnPrev.addEventListener('click', () => {
+				this.tlCurrentMonth--;
+				if (this.tlCurrentMonth < 0) {
+					this.tlCurrentMonth = 11;
+					this.tlCurrentYear--;
+				}
+				this.renderTimeline();
+			});
+
+			this.tlBtnNext.addEventListener('click', () => {
+				this.tlCurrentMonth++;
+				if (this.tlCurrentMonth > 11) {
+					this.tlCurrentMonth = 0;
+					this.tlCurrentYear++;
+				}
+				this.renderTimeline();
+			});
+		}
 	}
 
 	initScroll() {
@@ -455,5 +492,162 @@ export class View {
 
 	getMonthKey(date) {
 		return `${date.getFullYear()}-${date.getMonth()}`;
+	}
+
+	// --- LÓGICA DA LINHA DO TEMPO DIÁRIA ---
+	openTimelineModal() {
+		// Inicializa na data/mês atual ao abrir, se preferir
+		// default: a última visualizada, mas vamos resetar pro scroll atual se der?
+		// Para ficar simples, inicia no mês atual do sistema
+		this.tlCurrentYear = this.currentDate.getFullYear();
+		this.tlCurrentMonth = this.currentDate.getMonth();
+		this.renderTimeline();
+		this.timelineModal.showModal();
+	}
+
+	renderTimeline() {
+		if (!this.timelineModal) return;
+
+		// 1. Atualizar Header
+		const targetDate = new Date(this.tlCurrentYear, this.tlCurrentMonth, 1);
+		const monthName = targetDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+		this.tlMonthTitle.textContent = monthName.toUpperCase();
+
+		// O formatador de moeda
+		const fmt = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+
+		// 2. Coletar Todas as Transações até o fim desse mês
+		// Precisamos do saldo acumulado do começo dos tempos até o dia 1 do mês selecionado
+		// Observação: Isso requer somar tudo que tem data MENOR que dia 1.
+		let initialBalance = 0;
+		const startOfThisMonthStr = `${this.tlCurrentYear}-${String(this.tlCurrentMonth + 1).padStart(2, '0')}-01`;
+
+		// As transações do mês em questão (já considerando as fixas do view cache)
+		// O cache do store contem todas, mas para transações fixas que valem todos os meses,
+		// precisamos replicar a lógica de 'monthKey'
+
+		const currentMonthKey = `${this.tlCurrentYear}-${this.tlCurrentMonth}`;
+
+		// Coletar as variáveis brutas do mês:
+		const monthlyTransactions = [];
+
+		this.store.transactions.forEach(t => {
+			// Calculando saldo inicial:
+			// Tudo que tem t.type='variable' com data < startOfThisMonthStr
+			if (t.type === 'variable' && t.date < startOfThisMonthStr) {
+				initialBalance += t.value;
+			}
+			// Transações variáveis do mês exato
+			if (t.type === 'variable' && t.date.startsWith(`${this.tlCurrentYear}-${String(this.tlCurrentMonth + 1).padStart(2, '0')}`)) {
+				monthlyTransactions.push({ ...t, tlDate: t.date }); // salva para listar
+			}
+		});
+
+		// E os fixos? Fixos valem pros meses a partir da data de criação (ou onde foram alocados).
+		// O `processTransactions` gerencia isso criando 'groupData'. Mas e o initial balance?
+		// Para simplificar: A view já chamou `this.monthlyTotals`! Podemos usar this.monthlyTotals
+		// pra puxar a soma acumulada de todos os meses antes e o "fixed groups" pra puxar do mês atual!
+
+		let computedInitBalance = 0;
+		if (this.monthlyTotals) {
+			for (let mt of this.monthlyTotals) {
+				const mtKey = this.getMonthKey(mt.date);
+				if (mt.date < targetDate) { // meses passados visíveis
+					computedInitBalance += mt.balance;
+				}
+			}
+			// Mas isso só cobre os meses visíveis (-2). Para cobrir tudo perfeitamente precisaríamos iterar do início.
+			// Como o Poolgrana foca na visualização da viewport de meses...
+			// Vamos adotar computedInitBalance calculado a partir do acumulado passado,
+			// ou, se quisermos precisão total para o "saldo em conta real", usamos o `initialBalance` mais
+			// iteração de transações fixas passadas.
+			//
+			// Por enquanto, faremos a iteração completa pelo db:
+		}
+
+		// Método Definitivo para Saldo Inicial e Listagem:
+		// Baseado no request do usuário, vamos descartar o acumulado passado e focar 
+		// com Saldo Inicial de R$ 0,00 explícito para cada mês.
+		let accumBalance = 0;
+
+		this.tlStartBalance.textContent = "- Ignorado -";
+		this.tlStartBalance.parentNode.style.display = 'none'; // ocultar o agrupamento de saldo inicial do HTML visual
+
+		const { fixedGroups, variableByMonth } = this.processTransactions([targetDate]);
+
+		// Monta Eventos
+		const events = []; // Array de { day: int, transactions: [] }
+		const tlData = {}; // day -> []
+
+		// Injeta Vars
+		const vars = variableByMonth[currentMonthKey] || [];
+		vars.forEach(t => {
+			const d = parseInt(t.date.split('-')[2]); // extrai dd
+			if (!tlData[d]) tlData[d] = [];
+			tlData[d].push(t);
+		});
+
+		// Injeta Fixos
+		Object.values(fixedGroups).forEach(groupData => {
+			const arr = groupData[currentMonthKey];
+			if (arr) {
+				arr.forEach(t => {
+					// Pega o mesmo DD da data original do fixo pra repetir 'no mesmo dia' mas pro mês atual
+					const d = parseInt(t.date.split('-')[2]);
+					if (!tlData[d]) tlData[d] = [];
+					tlData[d].push({ ...t, isFixedInstance: true }); // marca
+				});
+			}
+		});
+
+		// Render HTMl
+		this.timelineContent.innerHTML = '';
+		let runningTotal = accumBalance;
+
+		// Ordenar dias
+		const sortedDays = Object.keys(tlData).map(Number).sort((a, b) => a - b);
+
+		if (sortedDays.length === 0) {
+			this.timelineContent.innerHTML = '<div style="text-align:center; padding: 20px; color: #999;">Nenhuma transação neste mês.</div>';
+			return;
+		}
+
+		sortedDays.forEach(day => {
+			const dayTx = tlData[day];
+			// Calcula totais do dia para o running balance
+			let daySum = 0;
+			dayTx.forEach(t => daySum += t.value);
+			runningTotal += daySum;
+
+			const rowDiv = document.createElement('div');
+			rowDiv.className = 'tl-row';
+
+			const dateDiv = document.createElement('div');
+			dateDiv.className = 'tl-date';
+			dateDiv.textContent = `${String(day).padStart(2, '0')}/${targetDate.toLocaleDateString('pt-BR', { month: 'short' })}`;
+
+			const evDiv = document.createElement('div');
+			evDiv.className = 'tl-events';
+
+			dayTx.forEach(t => {
+				const tDiv = document.createElement('div');
+				tDiv.className = `tl-item ${t.value >= 0 ? 'income' : 'expense'}`;
+				const vStr = fmt.format(t.value);
+				tDiv.innerHTML = `<span class="tl-item-desc">${t.description}</span><span style="color: ${t.value >= 0 ? 'var(--green)' : 'var(--red)'}">${t.value > 0 ? '+' + vStr : vStr}</span>`;
+				evDiv.appendChild(tDiv);
+			});
+
+			const balDiv = document.createElement('div');
+			balDiv.className = 'tl-balance-box';
+			balDiv.innerHTML = `
+				<span class="tl-balance-label">Saldo do Dia</span>
+				<span class="tl-balance-val ${runningTotal >= 0 ? 'positive' : 'negative'}">${fmt.format(runningTotal)}</span>
+			`;
+
+			rowDiv.appendChild(dateDiv);
+			rowDiv.appendChild(evDiv);
+			rowDiv.appendChild(balDiv);
+			this.timelineContent.appendChild(rowDiv);
+		});
 	}
 }

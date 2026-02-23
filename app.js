@@ -88,6 +88,32 @@ document.addEventListener('DOMContentLoaded', () => {
 			e.preventDefault();
 			document.body.classList.toggle('fade-past-active');
 		}
+
+		// Novo atalho: 't' para abrir a linha do tempo (timeline)
+		if (e.key.toLowerCase() === 't') {
+			e.preventDefault();
+			const tlModal = document.getElementById('timeline-modal');
+			if (tlModal) {
+				if (tlModal.open) {
+					tlModal.close();
+				} else {
+					view.openTimelineModal();
+				}
+			}
+		}
+
+		// Atalhos rápidos seta para direita/esquerda dentro da timeline
+		const tlModal = document.getElementById('timeline-modal');
+		if (tlModal && tlModal.open) {
+			if (e.key === 'ArrowRight') {
+				e.preventDefault();
+				document.getElementById('tl-btn-next').click();
+			} else if (e.key === 'ArrowLeft') {
+				e.preventDefault();
+				document.getElementById('tl-btn-prev').click();
+			}
+		}
+
 	});
 
 	// --- Lógica de Salvar / Abrir ---
