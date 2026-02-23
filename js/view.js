@@ -169,6 +169,8 @@ export class View {
 				const transactions = groupData[monthKey];
 				if (transactions) {
 					transactions.forEach(t => {
+						if (t.ignoreBalance) return; // Ignora o gasto original no cálculo, pois a fatura quem debita
+
 						balance += t.value;
 						if (t.value >= 0) {
 							income += t.value;
@@ -183,6 +185,7 @@ export class View {
 			// Somar Variáveis
 			const vars = variableByMonth[monthKey] || [];
 			vars.forEach(t => {
+				if (t.ignoreBalance) return; // Ignora
 				balance += t.value;
 				if (t.value >= 0) income += t.value; else expense += t.value;
 			});
@@ -242,27 +245,96 @@ export class View {
 			variableByMonth[this.getMonthKey(d)] = [];
 		});
 
+		// Inicializar Credit Card Groups
+		if (this.store.creditCards) {
+			this.store.creditCards.forEach(cc => {
+				fixedGroups[`CC_${cc.id}`] = {};
+			});
+		}
+
 		transactions.forEach(t => {
 			const tDate = new Date(t.date);
 			const tDateFixed = new Date(tDate.getUTCFullYear(), tDate.getUTCMonth(), tDate.getUTCDate());
 			const monthKey = this.getMonthKey(tDateFixed);
 
-			// Verifica se o mês está no range (fallback simples)
-			if (variableByMonth[monthKey] === undefined && (t.type !== 'fixed' && t.type !== 'installment')) return;
+			let itemToStore = t;
 
-			if (t.type === 'fixed' || t.type === 'installment') {
-				const groupId = t.groupId || t.description;
+			if (t.creditCardId) {
+				const cc = this.store.creditCards?.find(c => c.id === t.creditCardId);
+				if (cc) {
+					itemToStore = { ...t, _isCC: true, _ccColor: cc.color, ignoreBalance: true };
+
+					const billStr = this.calculateBillDate(t.date, cc.closingDay, cc.dueDay);
+					const bDate = new Date(billStr);
+					const bFixed = new Date(bDate.getUTCFullYear(), bDate.getUTCMonth(), bDate.getUTCDate());
+					const bMonthKey = this.getMonthKey(bFixed);
+
+					if (!fixedGroups[`CC_${cc.id}`]) fixedGroups[`CC_${cc.id}`] = {};
+					if (!fixedGroups[`CC_${cc.id}`][bMonthKey]) fixedGroups[`CC_${cc.id}`][bMonthKey] = [];
+
+					let invoiceItem = fixedGroups[`CC_${cc.id}`][bMonthKey].find(item => item.isInvoice);
+					if (invoiceItem) {
+						invoiceItem.value += t.value;
+					} else {
+						fixedGroups[`CC_${cc.id}`][bMonthKey].push({
+							id: `invoice_${cc.id}_${bMonthKey}`,
+							description: `Fatura ${cc.name}`,
+							value: t.value,
+							date: billStr,
+							type: 'fixed',
+							status: 'projected',
+							isInvoice: true,
+							_isCC: true,
+							_ccColor: cc.color,
+							_billDate: billStr
+						});
+					}
+				}
+			}
+
+			// Verifica se o mês está no range (fallback simples)
+			if (variableByMonth[monthKey] === undefined && (itemToStore.type !== 'fixed' && itemToStore.type !== 'installment')) return;
+
+			if (itemToStore.type === 'fixed' || itemToStore.type === 'installment') {
+				const groupId = itemToStore.groupId || itemToStore.description;
 				if (!fixedGroups[groupId]) fixedGroups[groupId] = {};
 
 				// Inicializar array se não existir
 				if (!fixedGroups[groupId][monthKey]) fixedGroups[groupId][monthKey] = [];
-				fixedGroups[groupId][monthKey].push(t);
+				fixedGroups[groupId][monthKey].push(itemToStore);
 			} else {
-				if (variableByMonth[monthKey]) variableByMonth[monthKey].push(t);
+				if (variableByMonth[monthKey]) variableByMonth[monthKey].push(itemToStore);
 			}
 		});
 
 		return { fixedGroups, variableByMonth };
+	}
+
+	calculateBillDate(txDateStr, closingDay, dueDay) {
+		const [y, m, d] = txDateStr.split('-').map(Number);
+		let closingMonth = m;
+		let closingYear = y;
+
+		if (d >= closingDay) {
+			closingMonth += 1;
+			if (closingMonth > 12) {
+				closingMonth = 1;
+				closingYear += 1;
+			}
+		}
+
+		let dueMonth = closingMonth;
+		let dueYear = closingYear;
+
+		if (dueDay < closingDay) {
+			dueMonth += 1;
+			if (dueMonth > 12) {
+				dueMonth = 1;
+				dueYear += 1;
+			}
+		}
+
+		return `${dueYear}-${String(dueMonth).padStart(2, '0')}-${String(dueDay).padStart(2, '0')}`;
 	}
 
 	cacheRowData(fixedGroups, dateRange) {
@@ -277,19 +349,34 @@ export class View {
 	}
 
 	renderFixedGrid(dateRange, fixedGroups) {
-		Object.keys(fixedGroups).sort().forEach(groupId => {
+		const keys = Object.keys(fixedGroups).sort((a, b) => {
+			const isCca = a.startsWith('CC_');
+			const isCcb = b.startsWith('CC_');
+			if (isCca && !isCcb) return -1;
+			if (!isCca && isCcb) return 1;
+			return a.localeCompare(b);
+		});
+
+		keys.forEach(groupId => {
 			const groupData = fixedGroups[groupId];
 
-			// Wrapper da Linha (Virtual, no display grid elements are flattened)
-			// Mas para esconder, precisamos selecionar todos os elementos dessa linha.
-			// Solução: Adicionar uma classe com o groupId em todos os elementos da linha 
-			// ou criar uma referência e gerenciar estilo.
+			const isCC = groupId.startsWith('CC_');
+			let labelText = groupId;
+			let labelBorder = '4px solid transparent';
+
+			if (isCC) {
+				const ccId = groupId.replace('CC_', '');
+				const cc = this.store.creditCards?.find(c => c.id === ccId);
+				labelText = cc ? `💳 ${cc.name}` : '💳 Cartão';
+				labelBorder = cc ? `4px solid ${cc.color}` : '4px solid #ddd';
+			}
 
 			// Label
 			const label = document.createElement('div');
 			label.className = `grid-row-label row-${groupId.replace(/\s+/g, '-')}`;
-			label.textContent = groupId;
-			label.title = groupId;
+			label.textContent = labelText;
+			label.title = labelText;
+			label.style.borderLeft = labelBorder;
 			this.fixedTimeline.appendChild(label);
 
 			// Store references
@@ -435,7 +522,22 @@ export class View {
 		}
 	}
 
+	populateCreditCards() {
+		const select = document.getElementById('edit-card');
+		if (!select) return;
+		select.innerHTML = '<option value="">Nenhum (Dinheiro / Débito)</option>';
+		if (this.store.creditCards) {
+			this.store.creditCards.forEach(cc => {
+				const opt = document.createElement('option');
+				opt.value = cc.id;
+				opt.textContent = cc.name;
+				select.appendChild(opt);
+			});
+		}
+	}
+
 	openEditModal(id) {
+		this.populateCreditCards();
 		const t = this.store.getTransaction(id);
 		if (!t) return;
 
@@ -445,6 +547,7 @@ export class View {
 		document.getElementById('edit-value').value = t.value;
 		document.getElementById('edit-date').value = t.date; // YYYY-MM-DD
 		document.getElementById('edit-type').value = (t.type === 'installment') ? 'fixed' : t.type;
+		document.getElementById('edit-card').value = t.creditCardId || "";
 
 		this.editModal.showModal();
 	}
@@ -452,11 +555,14 @@ export class View {
 	saveEdit() {
 		if (!this.currentEditId) return;
 
+		const ccVal = document.getElementById('edit-card').value;
+
 		const updates = {
 			description: document.getElementById('edit-desc').value,
 			value: parseFloat(document.getElementById('edit-value').value),
 			date: document.getElementById('edit-date').value,
-			type: document.getElementById('edit-type').value
+			type: document.getElementById('edit-type').value,
+			creditCardId: ccVal || null
 		};
 
 		// Se mudou para variável, limpa o groupId para desagrupar visualmente (opcional)
@@ -488,11 +594,19 @@ export class View {
 		const dd = String(today.getDate()).padStart(2, '0');
 		const todayStr = `${yyyy}-${mm}-${dd}`;
 
+		if (transaction._isCC) {
+			card.style.setProperty('--cc-color', transaction._ccColor);
+			card.classList.add('cc-item');
+			if (transaction._billDate >= todayStr) {
+				card.classList.add('cc-pending');
+			}
+		}
+
 		if (transaction.date < todayStr) {
 			card.classList.add('is-past');
 		}
 
-		card.draggable = true;
+		card.draggable = !transaction.isInvoice;
 		card.dataset.id = transaction.id;
 
 		const formattedValue = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(transaction.value);
@@ -503,10 +617,14 @@ export class View {
         `;
 
 		// Click para Editar
-		card.addEventListener('click', (e) => {
-			// Evitar conflito com Drag (simples check, pode ser melhorado)
-			this.openEditModal(transaction.id);
-		});
+		if (!transaction.isInvoice) {
+			card.addEventListener('click', (e) => {
+				this.openEditModal(transaction.id);
+			});
+		} else {
+			card.style.cursor = 'default';
+			card.title = "Fatura Agregada automática.";
+		}
 
 		return card;
 	}
@@ -625,6 +743,8 @@ export class View {
 		// Injeta Vars
 		const vars = variableByMonth[currentMonthKey] || [];
 		vars.forEach(t => {
+			if (t.ignoreBalance) return; // Não listar compras de CC soltas no Extrato diário
+
 			const d = parseInt(t.date.split('-')[2]); // extrai dd
 			if (!tlData[d]) tlData[d] = [];
 
@@ -638,8 +758,10 @@ export class View {
 			const arr = groupData[currentMonthKey];
 			if (arr) {
 				arr.forEach(t => {
+					if (t.ignoreBalance) return; // Não listar compras de CC soltas no Extrato diário, só a fatura
 					// Pega o mesmo DD da data original do fixo pra repetir 'no mesmo dia' mas pro mês atual
-					const d = parseInt(t.date.split('-')[2]);
+					const dateToUse = t._billDate || t.date;
+					const d = parseInt(dateToUse.split('-')[2]);
 					if (!tlData[d]) tlData[d] = [];
 					tlData[d].push({ ...t, isFixedInstance: true }); // marca
 				});

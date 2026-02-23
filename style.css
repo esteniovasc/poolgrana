@@ -502,6 +502,24 @@ dialog::backdrop {
 	outline: none;
 }
 
+/* Credit Card styles */
+.card.cc-item {
+	border-left-color: var(--cc-color, #8e44ad) !important;
+}
+
+.card.cc-item.cc-pending {
+	border-top: 2px dashed var(--cc-color, #8e44ad);
+	border-right: 2px dashed var(--cc-color, #8e44ad);
+	border-bottom: 2px dashed var(--cc-color, #8e44ad);
+	border-left: 4px dashed var(--cc-color, #8e44ad) !important;
+	opacity: 0.85;
+}
+
+.card.cc-item.cc-pending:hover {
+	opacity: 1;
+}
+
+/* Modal adjustments */
 .modal-actions {
 	display: flex;
 	justify-content: space-between;

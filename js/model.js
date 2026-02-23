@@ -13,16 +13,31 @@ export class Transaction {
 
 export class Store {
 	constructor() {
-		this.transactions = this.load() || this.getMockData();
+		const savedData = this.load();
+		if (savedData) {
+			if (Array.isArray(savedData)) {
+				this.transactions = savedData.map(t => new Transaction(t));
+				this.creditCards = [];
+			} else {
+				this.transactions = (savedData.transactions || []).map(t => new Transaction(t));
+				this.creditCards = savedData.creditCards || [];
+			}
+		} else {
+			this.transactions = this.getMockData();
+			this.creditCards = [];
+		}
 	}
 
 	load() {
 		const data = localStorage.getItem('fluxo-local-data');
-		return data ? JSON.parse(data).map(t => new Transaction(t)) : null;
+		return data ? JSON.parse(data) : null;
 	}
 
 	save() {
-		localStorage.setItem('fluxo-local-data', JSON.stringify(this.transactions));
+		localStorage.setItem('fluxo-local-data', JSON.stringify({
+			transactions: this.transactions,
+			creditCards: this.creditCards
+		}));
 	}
 
 	addTransaction(data) {
@@ -87,5 +102,18 @@ export class Store {
 			new Transaction({ description: 'Café', value: -12, date: `${year}-${month}-02`, type: 'variable' }),
 			new Transaction({ description: 'Luz (Est)', value: -150, date: `${year}-${month}-25`, type: 'variable', status: 'projected' })
 		];
+	}
+
+	addCreditCard(data) {
+		const cc = {
+			id: crypto.randomUUID(),
+			name: data.name,
+			color: data.color,
+			closingDay: data.closingDay,
+			dueDay: data.dueDay
+		};
+		this.creditCards.push(cc);
+		this.save();
+		return cc;
 	}
 }

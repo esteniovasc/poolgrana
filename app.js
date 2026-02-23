@@ -122,6 +122,17 @@ document.addEventListener('DOMContentLoaded', () => {
 			}
 		}
 
+		// Novo atalho: 'c' para adicionar Cartão de Crédito
+		if (e.key.toLowerCase() === 'c') {
+			e.preventDefault();
+			const ccModal = document.getElementById('cc-modal');
+			if (ccModal && !ccModal.open) {
+				ccModal.showModal();
+				const nomeInput = document.getElementById('cc-name');
+				if (nomeInput) nomeInput.focus();
+			}
+		}
+
 	});
 
 	// --- Lógica de Salvar / Abrir ---
@@ -131,7 +142,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	if (btnSave) {
 		btnSave.addEventListener('click', () => {
-			const data = JSON.stringify(store.transactions, null, 2);
+			const data = JSON.stringify({
+				transactions: store.transactions,
+				creditCards: store.creditCards
+			}, null, 2);
 			const blob = new Blob([data], { type: 'application/json' });
 			const url = URL.createObjectURL(blob);
 
@@ -167,7 +181,14 @@ document.addEventListener('DOMContentLoaded', () => {
 					const json = JSON.parse(event.target.result);
 					if (Array.isArray(json)) {
 						store.transactions = json;
+						store.creditCards = [];
 						store.save(); // Salva no LocalStorage
+						view.render();
+						alert("Projeto carregado com sucesso!");
+					} else if (json.transactions) {
+						store.transactions = json.transactions;
+						store.creditCards = json.creditCards || [];
+						store.save();
 						view.render();
 						alert("Projeto carregado com sucesso!");
 					} else {
@@ -181,6 +202,23 @@ document.addEventListener('DOMContentLoaded', () => {
 				fileInput.value = '';
 			};
 			reader.readAsText(file);
+		});
+	}
+
+	// Adicionar listener do form de Cartão de Crédito
+	const ccForm = document.getElementById('cc-form');
+	if (ccForm) {
+		ccForm.addEventListener('submit', (e) => {
+			e.preventDefault();
+			store.addCreditCard({
+				name: document.getElementById('cc-name').value,
+				color: document.getElementById('cc-color').value,
+				closingDay: parseInt(document.getElementById('cc-closing').value),
+				dueDay: parseInt(document.getElementById('cc-due').value)
+			});
+			document.getElementById('cc-modal').close();
+			ccForm.reset();
+			view.render();
 		});
 	}
 });
